@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI管理システム — コールセンター・営業</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#ffffff;--bg-secondary:#f5f5f5;--bg-tertiary:#efefef;
+  --bg-info:#e6f1fb;--bg-success:#eaf3de;--bg-warning:#faeeda;--bg-danger:#fcebeb;
+  --text-primary:#1a1a1a;--text-secondary:#555;--text-tertiary:#999;
+  --text-info:#185FA5;--text-success:#3B6D11;--text-warning:#854F0B;--text-danger:#A32D2D;
+  --border:#e0e0e0;--border-md:#ccc;
+  --radius-md:8px;--radius-lg:12px;
+  --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans','Meiryo',sans-serif;
+  --font-mono:'SF Mono','Consolas','Courier New',monospace;
+}
+body{font-family:var(--font-sans);font-size:14px;color:var(--text-primary);background:var(--bg-tertiary);height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+.sidebar{width:200px;background:var(--bg-primary);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:16px;border-bottom:1px solid var(--border)}
+.sidebar-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+.sidebar-sub{font-size:11px;color:var(--text-secondary);margin-top:3px}
+.nav-section{padding:8px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;font-size:13px;color:var(--text-secondary);transition:background .15s;border-left:3px solid transparent}
+.nav-item:hover{background:var(--bg-secondary)}
+.nav-item.active{background:var(--bg-info);color:var(--text-info);font-weight:600;border-left-color:var(--text-info)}
+.nav-item i{font-size:17px}
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.topbar{background:var(--bg-primary);border-bottom:1px solid var(--border);padding:0 20px;height:50px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.badge{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
+.badge-staff{background:var(--bg-success);color:var(--text-success)}
+.badge-admin{background:var(--bg-warning);color:var(--text-warning)}
+.content{flex:1;overflow-y:auto;padding:20px}
+/* Login */
+.login-wrap{display:flex;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg,#e6f1fb 0%,#f5f5f5 100%)}
+.login-card{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px;width:340px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.login-logo{font-size:20px;font-weight:700;text-align:center;margin-bottom:4px;color:var(--text-primary)}
+.login-logo i{color:var(--text-info)}
+.login-sub{font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:28px}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;color:var(--text-secondary);margin-bottom:5px;display:block;font-weight:500}
+.form-control{width:100%;padding:9px 11px;border:1px solid var(--border-md);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary);color:var(--text-primary);transition:border-color .15s}
+.form-control:focus{outline:none;border-color:#185FA5}
+select.form-control{cursor:pointer}
+/* Buttons */
+.btn{padding:8px 16px;border:1px solid var(--border-md);border-radius:var(--radius-md);cursor:pointer;font-size:13px;background:var(--bg-primary);color:var(--text-primary);transition:background .15s;font-family:inherit}
+.btn:hover{background:var(--bg-secondary)}
+.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5;font-weight:500}
+.btn-primary:hover{background:#0C447C;border-color:#0C447C}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-block{width:100%;padding:11px}
+/* Cards */
+.card{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px}
+.metric-card{background:var(--bg-secondary);border-radius:var(--radius-md);padding:12px 16px}
+.metric-label{font-size:11px;color:var(--text-secondary);margin-bottom:4px;font-weight:500}
+.metric-value{font-size:22px;font-weight:700}
+.metric-sub{font-size:11px;color:var(--text-tertiary);margin-top:3px}
+/* Grids */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+/* Section */
+.section-title{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text-secondary)}
+/* Attendance */
+.attendance-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.att-btn{padding:18px 8px;border-radius:var(--radius-lg);border:1.5px solid var(--border);cursor:pointer;text-align:center;font-size:13px;font-weight:600;transition:all .15s;background:var(--bg-primary);font-family:inherit;line-height:1.6}
+.att-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.att-btn.start{border-color:#1D9E75;color:#0F6E56}
+.att-btn.start:hover:not(:disabled){background:#E1F5EE}
+.att-btn.end-btn{border-color:#D85A30;color:#993C1D}
+.att-btn.end-btn:hover:not(:disabled){background:#FAECE7}
+.att-btn.break{border-color:#BA7517;color:#854F0B}
+.att-btn.break:hover:not(:disabled){background:#FAEEDA}
+.att-btn.ret{border-color:#185FA5;color:#0C447C}
+.att-btn.ret:hover:not(:disabled){background:#E6F1FB}
+.att-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+/* Timeline */
+.tl-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.tl-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.tl-dot.in{background:#1D9E75}
+.tl-dot.out{background:#D85A30}
+.tl-dot.brk{background:#BA7517}
+.tl-dot.ret2{background:#185FA5}
+.tl-time{color:var(--text-secondary);width:52px;font-family:var(--font-mono)}
+/* Tables */
+.kpi-table-wrap{overflow:auto;margin-top:8px;border-radius:var(--radius-md);border:1px solid var(--border)}
+.kpi-table{border-collapse:collapse;width:100%;font-size:12px}
+.kpi-table th{background:var(--bg-secondary);padding:7px 8px;text-align:center;border:1px solid var(--border);white-space:nowrap;font-weight:600;position:sticky;top:0;z-index:1;color:var(--text-secondary)}
+.kpi-table th.row-header{text-align:left;position:sticky;left:0;z-index:2;background:var(--bg-secondary)}
+.kpi-table td{padding:5px 8px;border:1px solid var(--border);text-align:right;white-space:nowrap;color:var(--text-primary)}
+.kpi-table td.row-header{text-align:left;background:var(--bg-secondary);font-weight:500;position:sticky;left:0;color:var(--text-primary)}
+.kpi-table td.today{background:#EEF5FF}
+.kpi-table td.total{background:var(--bg-secondary);font-weight:600}
+.kpi-table td.rate{color:#185FA5;font-weight:500}
+.kpi-table input[type=number]{width:62px;padding:3px 5px;border:1px solid var(--border-md);border-radius:5px;text-align:right;font-size:12px;background:#fff;color:var(--text-primary);font-family:inherit}
+.kpi-table input[type=number]:focus{outline:none;border-color:#185FA5}
+/* Progress */
+.progress-bar{height:4px;background:var(--bg-tertiary);border-radius:2px;margin-top:5px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width .4s}
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:9px 16px;cursor:pointer;font-size:13px;color:var(--text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s;font-weight:500}
+.tab:hover{color:var(--text-primary)}
+.tab.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:600}
+/* Report */
+.report-box{background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;font-size:12px;line-height:1.9;white-space:pre-wrap;font-family:var(--font-mono);color:var(--text-primary);min-height:140px}
+/* Team */
+.team-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.rank-num{width:28px;font-size:13px;color:var(--text-tertiary);font-weight:600}
+.rank-bar{flex:1;height:10px;background:var(--bg-secondary);border-radius:5px;overflow:hidden}
+.rank-fill{height:100%;border-radius:5px;background:#185FA5;transition:width .4s}
+.rank-val{width:55px;text-align:right;font-size:13px;font-weight:600}
+/* Select / Toggle */
+.select{padding:7px 10px;border:1px solid var(--border-md);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary);color:var(--text-primary);cursor:pointer;font-family:inherit}
+.toggle-group{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.toggle-btn{padding:5px 11px;border:1px solid var(--border-md);border-radius:20px;cursor:pointer;font-size:12px;background:var(--bg-primary);color:var(--text-secondary);font-family:inherit;transition:all .15s;font-weight:500}
+.toggle-btn.active{background:#185FA5;color:#fff;border-color:#185FA5}
+.toggle-btn:hover:not(.active){background:var(--bg-secondary)}
+/* Clock */
+.clock-display{font-size:32px;font-weight:700;text-align:center;margin:14px 0;color:#185FA5;font-family:var(--font-mono);letter-spacing:.05em}
+/* Status */
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.status-dot.working{background:#1D9E75}
+.status-dot.off{background:#aaa}
+.status-dot.break{background:#BA7517}
+/* Chart */
+.chart-wrap{position:relative;width:100%;height:220px;margin-top:8px}
+/* Admin */
+.admin-tag{font-size:10px;padding:2px 7px;background:var(--bg-warning);color:var(--text-warning);border-radius:4px;margin-left:6px;font-weight:500}
+table.att-list{width:100%;border-collapse:collapse;font-size:12px}
+table.att-list th{background:var(--bg-secondary);padding:7px 10px;text-align:left;border:1px solid var(--border);font-weight:600;color:var(--text-secondary)}
+table.att-list td{padding:7px 10px;border:1px solid var(--border)}
+/* Misc */
+.chip{display:inline-block;font-size:11px;padding:2px 7px;border-radius:10px;margin-left:4px;font-weight:500}
+.chip.late{background:#FAECE7;color:#993C1D}
+.chip.absent{background:#FCEBEB;color:#A32D2D}
+.tip{font-size:11px;color:var(--text-tertiary)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const STAFF_LIST=['田中 一郎','佐藤 花子','鈴木 太郎','高橋 美咲','伊藤 健司','渡辺 さくら','山本 浩二','中村 麗子','小林 大輔','加藤 由美'];
+const KPI_ACT=['コール数','アプローチ数','対コールコンタクト数','対アプローチコンタクト数','完了数','クロージング数','依頼数','後確数','契約数','解約数'];
+const KPI_RATE=['対コールコンタクト率','対アプローチコンタクト率','対コール完了率','対アプローチ完了率','クロージング率','依頼率','後確率','契約率'];
+const TODAY=new Date();
+const Y=TODAY.getFullYear(),M=TODAY.getMonth();
+const DAYS=new Date(Y,M+1,0).getDate();
+const TODAY_D=TODAY.getDate();
+
+let state={
+  page:'login',user:null,role:null,
+  attStatus:{},attLog:[],clockInterval:null,
+  clockStr:'--:--:--',workStart:null,breakStart:null,totalBreak:0,
+  kpiData:{},goals:{},activeStaff:0,kpiTab:'act',
+  timeSlots:['09:00','12:00','15:00','18:00'],timeData:{},
+  reportTab:'plain',reportKpis:['コール数','アプローチ数','契約数'],
+  dashStaff:0,dashKpi:'コール数',dashChart:null,
+  teamKpi:'コール数',teamTab:'rank',
+  adminTab:'correction',correctionLog:[{date:'06/09',staff:'田中 一郎',content:'出勤時刻 → 08:50',reason:'端末故障'}]
+};
+
+function initKpi(){
+  STAFF_LIST.forEach((s,si)=>{
+    if(!state.kpiData[si])state.kpiData[si]={};
+    for(let d=1;d<=DAYS;d++){
+      if(!state.kpiData[si][d])state.kpiData[si][d]={};
+      KPI_ACT.forEach(k=>{if(state.kpiData[si][d][k]===undefined)state.kpiData[si][d][k]=Math.floor(Math.random()*18);});
+    }
+    if(!state.goals[si])state.goals[si]={};
+    KPI_ACT.forEach(k=>{if(!state.goals[si][k])state.goals[si][k]=Math.floor(Math.random()*200+150);});
+  });
+}
+
+function calcRate(si,d){
+  const v=state.kpiData[si][d];
+  return {
+    '対コールコンタクト率':v['コール数']?((v['対コールコンタクト数']/v['コール数'])*100).toFixed(1)+'%':'—',
+    '対アプローチコンタクト率':v['アプローチ数']?((v['対アプローチコンタクト数']/v['アプローチ数'])*100).toFixed(1)+'%':'—',
+    '対コール完了率':v['コール数']?((v['完了数']/v['コール数'])*100).toFixed(1)+'%':'—',
+    '対アプローチ完了率':v['アプローチ数']?((v['完了数']/v['アプローチ数'])*100).toFixed(1)+'%':'—',
+    'クロージング率':v['完了数']?((v['クロージング数']/v['完了数'])*100).toFixed(1)+'%':'—',
+    '依頼率':v['クロージング数']?((v['依頼数']/v['クロージング数'])*100).toFixed(1)+'%':'—',
+    '後確率':v['依頼数']?((v['後確数']/v['依頼数'])*100).toFixed(1)+'%':'—',
+    '契約率':v['後確数']?((v['契約数']/v['後確数'])*100).toFixed(1)+'%':'—'
+  };
+}
+
+function sumKpi(si,kpi){let t=0;for(let d=1;d<=DAYS;d++)t+=state.kpiData[si][d][kpi]||0;return t;}
+
+function fmt30(totalMs){
+  const totalMin=Math.floor(totalMs/60000);
+  const h=Math.floor(totalMin/60);const mm=totalMin%60;
+  const r30=Math.floor(mm/30)*30;
+  return h+'h'+String(mm).padStart(2,'0')+'m  ('+h+':'+(r30===0?'00':'30')+')';
+}
+
+function render(){
+  if(state.dashChart){state.dashChart.destroy();state.dashChart=null;}
+  const root=document.getElementById('root');
+  if(state.page==='login'){root.innerHTML=loginHTML();bindLogin();return;}
+  root.innerHTML=appHTML();
+  bindNav();
+  if(state.page==='attendance')bindAttendance();
+  if(state.page==='kpi')bindKpi();
+  if(state.page==='timeslot')bindTimeslot();
+  if(state.page==='report')bindReport();
+  if(state.page==='dashboard')bindDashboard();
+  if(state.page==='team')bindTeam();
+  if(state.page==='admin')bindAdmin();
+  startClock();
+}
+
+/* ===== LOGIN ===== */
+function loginHTML(){
+  return `<div class="login-wrap"><div class="login-card">
+    <div class="login-logo"><i class="ti ti-chart-bar"></i> KPI管理システム</div>
+    <div class="login-sub">コールセンター・営業 統合管理</div>
+    <div class="form-group"><label class="form-label">担当者を選択</label>
+      <select class="form-control" id="l-staff">
+        <option value="">— 選択してください —</option>
+        ${STAFF_LIST.map((s,i)=>`<option value="${i}">${s}</option>`).join('')}
+        <option value="admin">【管理者】</option>
+      </select></div>
+    <div class="form-group"><label class="form-label">パスワード</label>
+      <input class="form-control" type="password" id="l-pass" placeholder="パスワードを入力" value="1234"></div>
+    <button class="btn btn-primary btn-block" id="l-btn"><i class="ti ti-login"></i> ログイン</button>
+    <p class="tip" style="margin-top:12px;text-align:center">テスト用パスワード: 1234</p>
+  </div></div>`;
+}
+
+function bindLogin(){
+  document.getElementById('l-btn').onclick=()=>{
+    const si=document.getElementById('l-staff').value;
+    const pw=document.getElementById('l-pass').value;
+    if(!si){alert('担当者を選択してください');return;}
+    if(pw!=='1234'){alert('パスワードが違います');return;}
+    if(si==='admin'){state.role='admin';state.user=null;state.page='admin';}
+    else{state.role='staff';state.user=parseInt(si);state.page='attendance';}
+    initKpi();render();
+  };
+  document.getElementById('l-pass').onkeydown=e=>{if(e.key==='Enter')document.getElementById('l-btn').click();};
+}
+
+/* ===== APP SHELL ===== */
+function appHTML(){
+  const name=state.role==='admin'?'管理者':(state.user!==null?STAFF_LIST[state.user]:'');
+  const pages=[
+    {id:'attendance',icon:'ti-clock',label:'打刻'},
+    {id:'kpi',icon:'ti-table',label:'KPI入力'},
+    {id:'timeslot',icon:'ti-timeline',label:'時間帯集計'},
+    {id:'report',icon:'ti-message-dots',label:'チャット報告'},
+    {id:'dashboard',icon:'ti-chart-line',label:'個人ダッシュ'},
+    {id:'team',icon:'ti-users',label:'チーム比較'},
+  ];
+  if(state.role==='admin')pages.push({id:'admin',icon:'ti-settings',label:'管理者'});
+  const pageTitles={attendance:'出退勤打刻',kpi:'KPI入力',timeslot:'時間帯集計',report:'チャット報告生成',dashboard:'個人ダッシュボード',team:'チームダッシュボード',admin:'管理者画面'};
+  return `<div class="app">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title"><i class="ti ti-chart-bar" style="color:#185FA5"></i> KPIシステム</div>
+        <div class="sidebar-sub">${name}</div>
+      </div>
+      <div class="nav-section">
+        ${pages.map(p=>`<div class="nav-item ${state.page===p.id?'active':''}" data-page="${p.id}">
+          <i class="ti ${p.icon}"></i>${p.label}</div>`).join('')}
+      </div>
+      <div style="padding:12px;border-top:1px solid var(--border)">
+        <div class="nav-item" id="logout-btn" style="border-left:none"><i class="ti ti-logout"></i>ログアウト</div>
+      </div>
+    </div>
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title">${pageTitles[state.page]||''}</div>
+        <div class="topbar-right">
+          <span id="live-clock" style="font-size:13px;color:var(--text-secondary);font-family:var(--font-mono)">${state.clockStr}</span>
+          <span class="badge ${state.role==='admin'?'badge-admin':'badge-staff'}">${name}</span>
+        </div>
+      </div>
+      <div class="content" id="page-content">${pageContent()}</div>
+    </div>
+  </div>`;
+}
+
+function pageContent(){
+  if(state.page==='attendance')return attendancePage();
+  if(state.page==='kpi')return kpiPage();
+  if(state.page==='timeslot')return timeslotPage();
+  if(state.page==='report')return reportPage();
+  if(state.page==='dashboard')return dashboardPage();
+  if(state.page==='team')return teamPage();
+  if(state.page==='admin')return adminPage();
+  return '';
+}
+
+function bindNav(){
+  document.querySelectorAll('.nav-item[data-page]').forEach(el=>{
+    el.onclick=()=>{state.page=el.dataset.page;render();};
+  });
+  document.getElementById('logout-btn').onclick=()=>{state.page='login';state.user=null;state.role=null;render();};
+}
+
+function startClock(){
+  if(state.clockInterval)clearInterval(state.clockInterval);
+  state.clockInterval=setInterval(()=>{
+    const n=new Date();
+    state.clockStr=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+    const c=document.getElementById('live-clock');if(c)c.textContent=state.clockStr;
+    const a=document.getElementById('att-clock');if(a)a.textContent=state.clockStr;
+  },1000);
+}
+
+/* ===== ATTENDANCE ===== */
+function attendancePage(){
+  const si=state.user;
+  const log=state.attLog.filter(l=>l.si===si);
+  const status=state.attStatus[si]||'off';
+  const labels={off:'未出勤',working:'稼働中',break:'休憩中'};
+  let workMs=0;
+  if(state.workStart){
+    workMs=Date.now()-state.workStart-state.totalBreak;
+    if(state.breakStart)workMs-=(Date.now()-state.breakStart);
+    if(workMs<0)workMs=0;
+  }
+  return `
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="metric-card">
+      <div class="metric-label"><span class="status-dot ${status}"></span>${labels[status]}</div>
+      <div class="metric-value" style="font-size:20px">${STAFF_LIST[si]}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">実働時間</div>
+      <div class="metric-value" style="font-size:16px">${workMs>60000?fmt30(workMs):'—'}</div>
+    </div>
+  </div>
+  <div class="clock-display" id="att-clock">${state.clockStr}</div>
+  <div class="attendance-btns">
+    <button class="att-btn start" id="btn-in" ${status!=='off'?'disabled':''}><i class="ti ti-login" style="font-size:20px;display:block;margin-bottom:4px"></i>出勤</button>
+    <button class="att-btn break" id="btn-brk" ${status!=='working'?'disabled':''}><i class="ti ti-coffee" style="font-size:20px;display:block;margin-bottom:4px"></i>休憩開始</button>
+    <button class="att-btn ret" id="btn-ret" ${status!=='break'?'disabled':''}><i class="ti ti-player-play" style="font-size:20px;display:block;margin-bottom:4px"></i>休憩終了</button>
+    <button class="att-btn end-btn" id="btn-out" ${status==='off'?'disabled':''}><i class="ti ti-logout" style="font-size:20px;display:block;margin-bottom:4px"></i>退勤</button>
+  </div>
+  <div class="section-title">打刻履歴（本日）</div>
+  <div>
+    ${log.length===0?'<p class="tip" style="padding:10px 0">まだ打刻がありません</p>':
+      log.map(l=>`<div class="tl-item">
+        <div class="tl-dot ${l.type}"></div>
+        <div class="tl-time">${l.time}</div>
+        <div>${{in:'出勤',out:'退勤',brk:'休憩開始',ret2:'休憩終了'}[l.type]}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function bindAttendance(){
+  const si=state.user;
+  const punch=(type)=>{
+    const now=new Date();
+    const timeStr=[now.getHours(),now.getMinutes()].map(x=>String(x).padStart(2,'0')).join(':');
+    state.attLog.push({si,type,time:timeStr});
+    if(type==='in'){state.attStatus[si]='working';state.workStart=Date.now();state.totalBreak=0;}
+    if(type==='brk'){state.attStatus[si]='break';state.breakStart=Date.now();}
+    if(type==='ret2'){state.attStatus[si]='working';if(state.breakStart)state.totalBreak+=Date.now()-state.breakStart;state.breakStart=null;}
+    if(type==='out'){state.attStatus[si]='off';state.workStart=null;state.breakStart=null;}
+    render();
+  };
+  document.getElementById('btn-in').onclick=()=>punch('in');
+  document.getElementById('btn-brk').onclick=()=>punch('brk');
+  document.getElementById('btn-ret').onclick=()=>punch('ret2');
+  document.getElementById('btn-out').onclick=()=>{if(confirm('退勤処理を行いますか？'))punch('out');};
+}
+
+/* ===== KPI ===== */
+function kpiPage(){
+  const si=state.activeStaff;
+  const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const kpis=state.kpiTab==='act'?KPI_ACT:KPI_RATE;
+  return `
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:600">${Y}年${months[M]}</span>
+    <select class="select" id="kpi-staff">${STAFF_LIST.map((s,i)=>`<option value="${i}" ${i===si?'selected':''}>${s}</option>`).join('')}</select>
+    <div class="tabs" style="margin-bottom:0;border:none">
+      <div class="tab ${state.kpiTab==='act'?'active':''}" data-ktab="act">活動指標</div>
+      <div class="tab ${state.kpiTab==='rate'?'active':''}" data-ktab="rate">率指標（自動計算）</div>
+    </div>
+    <span id="save-status" class="tip" style="margin-left:auto"><i class="ti ti-check" style="color:#1D9E75"></i> 自動保存済み</span>
+  </div>
+  <div class="grid-4" style="margin-bottom:16px">
+    ${['コール数','アプローチ数','契約数','クロージング数'].map(k=>{
+      const tot=sumKpi(si,k);const goal=state.goals[si][k]||1;const pct=Math.min(100,Math.round(tot/goal*100));
+      const col=pct>=100?'#1D9E75':pct>=70?'#BA7517':'#D85A30';
+      return `<div class="metric-card">
+        <div class="metric-label">${k}</div>
+        <div class="metric-value" style="font-size:20px;color:${col}">${tot}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${col}"></div></div>
+        <div class="metric-sub">${pct}%達成 / 目標 ${goal}</div>
+      </div>`;}).join('')}
+  </div>
+  <div class="kpi-table-wrap">
+    <table class="kpi-table">
+      <thead><tr>
+        <th class="row-header">KPI項目</th>
+        ${Array.from({length:DAYS},(_,i)=>`<th ${i+1===TODAY_D?'style="background:#dceeff"':''}>${i+1}</th>`).join('')}
+        <th>合計</th>
+      </tr></thead>
+      <tbody>
+        ${kpis.map(k=>{
+          const isRate=KPI_RATE.includes(k);
+          return `<tr>
+            <td class="row-header">${k}</td>
+            ${Array.from({length:DAYS},(_,d)=>{
+              const day=d+1;
+              if(isRate){const r=calcRate(si,day);return `<td class="${day===TODAY_D?'today ':''} rate">${r[k]}</td>`;}
+              return `<td class="${day===TODAY_D?'today':''}"><input type="number" min="0" value="${state.kpiData[si][day][k]||0}" data-si="${si}" data-day="${day}" data-kpi="${k}"></td>`;
+            }).join('')}
+            <td class="total ${isRate?'rate':''}">${isRate?'—':sumKpi(si,k)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function bindKpi(){
+  document.getElementById('kpi-staff').onchange=e=>{state.activeStaff=parseInt(e.target.value);render();};
+  document.querySelectorAll('[data-ktab]').forEach(el=>{el.onclick=()=>{state.kpiTab=el.dataset.ktab;render();};});
+  document.querySelectorAll('.kpi-table input[type=number]').forEach(inp=>{
+    inp.oninput=e=>{
+      const si=parseInt(e.target.dataset.si),day=parseInt(e.target.dataset.day),kpi=e.target.dataset.kpi;
+      state.kpiData[si][day][kpi]=parseInt(e.target.value)||0;
+    };
+  });
+}
+
+/* ===== TIMESLOT ===== */
+function timeslotPage(){
+  const si=state.activeStaff;
+  const slots=state.timeSlots;
+  return `
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <select class="select" id="ts-staff">${STAFF_LIST.map((s,i)=>`<option value="${i}" ${i===si?'selected':''}>${s}</option>`).join('')}</select>
+    <button class="btn btn-sm" id="add-slot"><i class="ti ti-plus"></i> 時間帯を追加</button>
+    <span class="tip">区切り時刻を追加・削除できます</span>
+  </div>
+  <div class="kpi-table-wrap">
+    <table class="kpi-table">
+      <thead><tr>
+        <th class="row-header">KPI項目</th>
+        ${slots.map((s,i)=>{
+          const prev=i===0?'開始':slots[i-1];
+          return `<th>${prev}〜${s}<br>
+            <button class="btn btn-sm" style="font-size:10px;margin-top:3px;padding:2px 7px" data-del="${i}"><i class="ti ti-trash"></i></button></th>`;
+        }).join('')}
+        <th>累計</th>
+      </tr></thead>
+      <tbody>
+        ${KPI_ACT.map(k=>`<tr>
+          <td class="row-header">${k}</td>
+          ${slots.map((s,i)=>{
+            const key=`${si}_${k}_${i}`;
+            if(!state.timeData[key])state.timeData[key]=Math.floor(Math.random()*20);
+            return `<td><input type="number" min="0" value="${state.timeData[key]}" data-tskey="${key}"></td>`;
+          }).join('')}
+          <td class="total">${sumKpi(si,k)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function bindTimeslot(){
+  document.getElementById('ts-staff').onchange=e=>{state.activeStaff=parseInt(e.target.value);render();};
+  document.getElementById('add-slot').onclick=()=>{
+    const t=prompt('追加する時刻を入力してください\n例: 11:00');
+    if(t&&/^\d{1,2}:\d{2}$/.test(t)){
+      const norm=t.length===4?'0'+t:t;
+      if(!state.timeSlots.includes(norm)){state.timeSlots=[...state.timeSlots,norm].sort();render();}
+      else alert('すでに登録されている時刻です');
+    } else if(t) alert('形式が正しくありません（例: 11:00）');
+  };
+  document.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.onclick=()=>{if(confirm('この時間帯を削除しますか？'))state.timeSlots.splice(parseInt(btn.dataset.del),1);render();};
+  });
+  document.querySelectorAll('[data-tskey]').forEach(inp=>{
+    inp.oninput=e=>{state.timeData[e.target.dataset.tskey]=parseInt(e.target.value)||0;};
+  });
+}
+
+/* ===== REPORT ===== */
+function reportPage(){
+  const si=state.activeStaff;
+  const mo=TODAY.getMonth()+1;const d=TODAY.getDate();
+  const lines=state.reportKpis.map(k=>{
+    const v=sumKpi(si,k);const g=state.goals[si][k]||1;const p=Math.round(v/g*100);
+    return {k,v,p};
+  });
+  const plain=`【日次KPI報告】${mo}/${d}\n担当：${STAFF_LIST[si]}\n${'─'.repeat(22)}\n`+
+    lines.map(l=>`${l.k}：${l.v}件 (目標比 ${l.p}%)`).join('\n')+`\n${'─'.repeat(22)}\n以上`;
+  const slack=`*【日次KPI報告】${mo}/${d}*\n担当：*${STAFF_LIST[si]}*\n`+
+    lines.map(l=>`> ${l.k}：*${l.v}件* ${l.p>=100?':white_check_mark:':':warning:'} ${l.p}%`).join('\n')+'\n_以上_';
+  return `
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <select class="select" id="rep-staff">${STAFF_LIST.map((s,i)=>`<option value="${i}" ${i===si?'selected':''}>${s}</option>`).join('')}</select>
+    <span style="font-size:13px;color:var(--text-secondary)">表示KPI：</span>
+    ${KPI_ACT.slice(0,5).map(k=>`<button class="toggle-btn ${state.reportKpis.includes(k)?'active':''}" data-rkpi="${k}">${k}</button>`).join('')}
+  </div>
+  <div class="tabs">
+    <div class="tab ${state.reportTab==='plain'?'active':''}" data-rtab="plain"><i class="ti ti-message"></i> プレーン（LINE/Chatwork）</div>
+    <div class="tab ${state.reportTab==='slack'?'active':''}" data-rtab="slack"><i class="ti ti-brand-slack"></i> Slackフォーマット</div>
+  </div>
+  <div class="report-box" id="rep-box">${state.reportTab==='plain'?plain:slack}</div>
+  <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+    <button class="btn btn-sm" id="copy-btn"><i class="ti ti-copy"></i> クリップボードにコピー</button>
+    <span id="copy-msg" style="font-size:12px;color:#1D9E75;display:none"><i class="ti ti-check"></i> コピーしました！</span>
+  </div>`;
+}
+
+function bindReport(){
+  document.getElementById('rep-staff').onchange=e=>{state.activeStaff=parseInt(e.target.value);render();};
+  document.querySelectorAll('[data-rtab]').forEach(el=>{el.onclick=()=>{state.reportTab=el.dataset.rtab;render();};});
+  document.querySelectorAll('[data-rkpi]').forEach(el=>{
+    el.onclick=()=>{
+      const k=el.dataset.rkpi;
+      state.reportKpis=state.reportKpis.includes(k)?state.reportKpis.filter(x=>x!==k):[...state.reportKpis,k];
+      render();
+    };
+  });
+  document.getElementById('copy-btn').onclick=()=>{
+    const txt=document.getElementById('rep-box').textContent;
+    navigator.clipboard.writeText(txt).then(()=>{
+      const m=document.getElementById('copy-msg');m.style.display='inline';
+      setTimeout(()=>{m.style.display='none';},2000);
+    }).catch(()=>{alert('コピーに失敗しました\n手動で選択してコピーしてください');});
+  };
+}
+
+/* ===== DASHBOARD ===== */
+function dashboardPage(){
+  const si=state.dashStaff;
+  const kpi=state.dashKpi;
+  const tot=sumKpi(si,kpi);
+  const goal=state.goals[si][kpi]||1;
+  const pct=Math.round(tot/goal*100);
+  const col=pct>=100?'#1D9E75':pct>=70?'#BA7517':'#D85A30';
+  return `
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <select class="select" id="dash-staff">${STAFF_LIST.map((s,i)=>`<option value="${i}" ${i===si?'selected':''}>${s}</option>`).join('')}</select>
+    <div class="toggle-group" style="margin:0">
+      ${['コール数','アプローチ数','契約数','クロージング数'].map(k=>`<button class="toggle-btn ${kpi===k?'active':''}" data-dkpi="${k}">${k}</button>`).join('')}
+    </div>
+  </div>
+  <div class="grid-3" style="margin-bottom:14px">
+    <div class="metric-card"><div class="metric-label">月次累計</div><div class="metric-value">${tot}</div></div>
+    <div class="metric-card"><div class="metric-label">月次目標</div><div class="metric-value">${goal}</div></div>
+    <div class="metric-card"><div class="metric-label">達成率</div><div class="metric-value" style="color:${col}">${pct}%</div></div>
+  </div>
+  <div class="card">
+    <div class="section-title">${kpi} — 日別推移</div>
+    <div style="display:flex;gap:16px;margin-bottom:8px;font-size:11px;color:var(--text-secondary)">
+      <span><span style="display:inline-block;width:14px;height:3px;background:#185FA5;border-radius:2px;vertical-align:middle;margin-right:4px"></span>実績</span>
+      <span><span style="display:inline-block;width:14px;height:0;border-top:2px dashed #aaa;vertical-align:middle;margin-right:4px"></span>目標ペース</span>
+    </div>
+    <div class="chart-wrap"><canvas id="dash-chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="section-title">全KPI達成状況 — ${STAFF_LIST[si]}</div>
+    ${KPI_ACT.map(k=>{const t=sumKpi(si,k);const g=state.goals[si][k]||1;const p=Math.round(t/g*100);const c=p>=100?'#1D9E75':p>=70?'#BA7517':'#D85A30';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="width:130px;font-size:12px;flex-shrink:0">${k}</div>
+        <div style="flex:1"><div class="progress-bar" style="height:6px"><div class="progress-fill" style="width:${Math.min(p,100)}%;background:${c}"></div></div></div>
+        <div style="font-size:12px;color:${c};width:44px;text-align:right;font-weight:600">${p}%</div>
+        <div class="tip" style="width:60px;text-align:right">${t}/${g}</div>
+      </div>`;}).join('')}
+  </div>`;
+}
+
+function bindDashboard(){
+  document.getElementById('dash-staff').onchange=e=>{state.dashStaff=parseInt(e.target.value);render();};
+  document.querySelectorAll('[data-dkpi]').forEach(el=>{el.onclick=()=>{state.dashKpi=el.dataset.dkpi;render();};});
+  setTimeout(()=>{
+    const canvas=document.getElementById('dash-chart');if(!canvas)return;
+    const si=state.dashStaff;const kpi=state.dashKpi;
+    const days=Array.from({length:DAYS},(_,i)=>i+1);
+    const vals=days.map(d=>state.kpiData[si][d][kpi]||0);
+    const goal=state.goals[si][kpi]||1;
+    const dayGoal=Math.round(goal/DAYS);
+    if(state.dashChart)state.dashChart.destroy();
+    state.dashChart=new Chart(canvas,{
+      type:'line',
+      data:{labels:days,datasets:[
+        {label:'実績',data:vals,borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.07)',fill:true,tension:.3,pointRadius:2,pointHoverRadius:5},
+        {label:'目標ペース',data:days.map(()=>dayGoal),borderColor:'#aaa',borderDash:[5,5],fill:false,pointRadius:0,tension:0}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{autoSkip:true,maxTicksLimit:12}},y:{beginAtZero:true}}}
+    });
+  },80);
+}
+
+/* ===== TEAM ===== */
+function teamPage(){
+  const kpi=state.teamKpi;
+  const staffVals=STAFF_LIST.map((s,i)=>({name:s,val:sumKpi(i,kpi),goal:state.goals[i][kpi]||1}));
+  const maxVal=Math.max(...staffVals.map(s=>s.val),1);
+  return `
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:13px;color:var(--text-secondary)">KPI：</span>
+    ${['コール数','アプローチ数','契約数','クロージング数'].map(k=>`<button class="toggle-btn ${kpi===k?'active':''}" data-tkpi="${k}">${k}</button>`).join('')}
+  </div>
+  <div class="tabs">
+    <div class="tab ${state.teamTab==='rank'?'active':''}" data-ttab="rank">ランキング</div>
+    <div class="tab ${state.teamTab==='table'?'active':''}" data-ttab="table">全員比較表</div>
+  </div>
+  ${state.teamTab==='rank'?teamRank(staffVals,maxVal):teamTable()}`;
+}
+
+function teamRank(staffVals,maxVal){
+  const sorted=[...staffVals].sort((a,b)=>b.val-a.val);
+  const medals=['🥇','🥈','🥉'];
+  return `<div class="card">
+    ${sorted.map((s,i)=>{
+      const pct=Math.round(s.val/maxVal*100);
+      const ach=Math.round(s.val/s.goal*100);
+      const col=ach>=100?'#1D9E75':ach>=70?'#BA7517':'#D85A30';
+      return `<div class="team-row">
+        <div class="rank-num">${i<3?medals[i]:(i+1)}</div>
+        <div style="width:75px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+        <div class="rank-bar"><div class="rank-fill" style="width:${pct}%;background:#185FA5"></div></div>
+        <div class="rank-val">${s.val}</div>
+        <div style="font-size:12px;color:${col};width:45px;text-align:right;font-weight:600">${ach}%</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function teamTable(){
+  return `<div class="kpi-table-wrap"><table class="kpi-table">
+    <thead><tr><th class="row-header">担当者</th>${KPI_ACT.map(k=>`<th>${k}</th>`).join('')}</tr></thead>
+    <tbody>${STAFF_LIST.map((s,i)=>`<tr>
+      <td class="row-header">${s}</td>
+      ${KPI_ACT.map(k=>{const v=sumKpi(i,k);const g=state.goals[i][k]||1;const p=v/g;
+        const col=p>=1?'#1D9E75':p>=.7?'#BA7517':'#D85A30';
+        return `<td style="color:${col}">${v}</td>`;}).join('')}
+    </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+function bindTeam(){
+  document.querySelectorAll('[data-tkpi]').forEach(el=>{el.onclick=()=>{state.teamKpi=el.dataset.tkpi;render();};});
+  document.querySelectorAll('[data-ttab]').forEach(el=>{el.onclick=()=>{state.teamTab=el.dataset.ttab;render();};});
+}
+
+/* ===== ADMIN ===== */
+function adminPage(){
+  return `<div class="tabs">
+    <div class="tab ${state.adminTab==='correction'?'active':''}" data-atab="correction"><i class="ti ti-edit"></i> 打刻修正</div>
+    <div class="tab ${state.adminTab==='leave'?'active':''}" data-atab="leave"><i class="ti ti-calendar"></i> 有給・欠勤</div>
+    <div class="tab ${state.adminTab==='goals'?'active':''}" data-atab="goals"><i class="ti ti-target"></i> 目標設定</div>
+  </div>
+  ${state.adminTab==='correction'?adminCorrection():state.adminTab==='leave'?adminLeave():adminGoals()}`;
+}
+
+function adminCorrection(){
+  return `<div class="card">
+    <div class="section-title">打刻修正 <span class="admin-tag">管理者専用</span></div>
+    <div class="grid-2" style="gap:10px;margin-bottom:14px">
+      <div><div class="form-label">担当者</div><select class="form-control" id="cor-staff">${STAFF_LIST.map((s,i)=>`<option value="${i}">${s}</option>`).join('')}</select></div>
+      <div><div class="form-label">対象日</div><input class="form-control" type="date" id="cor-date" value="${Y}-${String(M+1).padStart(2,'0')}-${String(TODAY_D).padStart(2,'0')}"></div>
+      <div><div class="form-label">修正項目</div><select class="form-control" id="cor-type"><option>出勤時刻</option><option>退勤時刻</option><option>休憩開始</option><option>休憩終了</option></select></div>
+      <div><div class="form-label">修正後の時刻</div><input class="form-control" type="time" id="cor-time" value="09:00"></div>
+    </div>
+    <div class="form-group"><div class="form-label">修正理由（必須）</div><input class="form-control" type="text" id="cor-reason" placeholder="例：システム障害による打刻漏れ"></div>
+    <button class="btn btn-primary" id="cor-save"><i class="ti ti-device-floppy"></i> 修正を保存する</button>
+  </div>
+  <div class="card">
+    <div class="section-title">修正ログ</div>
+    <table class="att-list" id="cor-log-table">
+      <thead><tr><th>日付</th><th>担当者</th><th>修正内容</th><th>理由</th></tr></thead>
+      <tbody>
+        ${state.correctionLog.map(l=>`<tr><td>${l.date}</td><td>${l.staff}</td><td>${l.content}</td><td>${l.reason}</td></tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function adminLeave(){
+  const leaveData=STAFF_LIST.map((s,i)=>({name:s,remain:10-i%3,taken:i%3,absent:i%2}));
+  return `<div class="card">
+    <div class="section-title">有給・欠勤管理 <span class="admin-tag">管理者専用</span></div>
+    <table class="att-list">
+      <thead><tr><th>担当者</th><th>有給残日数</th><th>取得済</th><th>欠勤数</th><th>操作</th></tr></thead>
+      <tbody>
+        ${leaveData.map(l=>`<tr>
+          <td>${l.name}</td>
+          <td>${l.remain}日</td>
+          <td>${l.taken}日</td>
+          <td>${l.absent>0?`<span class="chip absent">${l.absent}日</span>`:'0日'}</td>
+          <td><button class="btn btn-sm" onclick="alert('編集機能（実装予定）')"><i class="ti ti-edit"></i> 編集</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function adminGoals(){
+  const si=state.activeStaff;
+  return `<div class="card">
+    <div class="section-title">月次目標設定 <span class="admin-tag">管理者専用</span></div>
+    <div style="margin-bottom:14px">
+      <select class="select" id="goal-staff">${STAFF_LIST.map((s,i)=>`<option value="${i}" ${i===si?'selected':''}>${s}</option>`).join('')}</select>
+    </div>
+    <table class="att-list">
+      <thead><tr><th>KPI項目</th><th>月次目標値</th><th>現在の達成率</th></tr></thead>
+      <tbody>
+        ${KPI_ACT.map(k=>{
+          const tot=sumKpi(si,k);const goal=state.goals[si][k]||1;const pct=Math.round(tot/goal*100);
+          const col=pct>=100?'#1D9E75':pct>=70?'#BA7517':'#D85A30';
+          return `<tr><td>${k}</td>
+            <td><input type="number" class="form-control" style="width:100px" value="${goal}" data-gkpi="${k}" data-gsi="${si}"></td>
+            <td style="color:${col};font-weight:600">${pct}%（${tot}件）</td></tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    <button class="btn btn-primary" style="margin-top:12px" id="goal-save"><i class="ti ti-device-floppy"></i> 目標を保存</button>
+  </div>`;
+}
+
+function bindAdmin(){
+  document.querySelectorAll('[data-atab]').forEach(el=>{el.onclick=()=>{state.adminTab=el.dataset.atab;render();};});
+  const corSave=document.getElementById('cor-save');
+  if(corSave)corSave.onclick=()=>{
+    const staffIdx=document.getElementById('cor-staff').value;
+    const date=document.getElementById('cor-date').value;
+    const type=document.getElementById('cor-type').value;
+    const time=document.getElementById('cor-time').value;
+    const reason=document.getElementById('cor-reason').value;
+    if(!reason){alert('修正理由を入力してください');return;}
+    const d=new Date(date);const mo=d.getMonth()+1;const dd=d.getDate();
+    state.correctionLog.unshift({
+      date:`${String(mo).padStart(2,'0')}/${String(dd).padStart(2,'0')}`,
+      staff:STAFF_LIST[staffIdx],
+      content:`${type} → ${time}`,
+      reason
+    });
+    alert('修正を保存しました');
+    render();
+  };
+  const goalStaff=document.getElementById('goal-staff');
+  if(goalStaff)goalStaff.onchange=e=>{state.activeStaff=parseInt(e.target.value);render();};
+  document.querySelectorAll('[data-gkpi]').forEach(inp=>{
+    inp.oninput=e=>{const si=parseInt(e.target.dataset.gsi);state.goals[si][e.target.dataset.gkpi]=parseInt(e.target.value)||0;};
+  });
+  const goalSave=document.getElementById('goal-save');
+  if(goalSave)goalSave.onclick=()=>alert('目標を保存しました（実際の実装ではDBに保存されます）');
+}
+
+/* ===== INIT ===== */
+initKpi();
+render();
+</script>
+</body>
+</html>

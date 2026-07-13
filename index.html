@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>shachi-orca — portfolio</title>
+    <meta name="description" content="shachi-orca のポートフォリオ。近未来・没入感のある作品発表とメイキング。" />
+
+    <!-- アイコン類 -->
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta name="theme-color" content="#04060d" />
+
+    <!-- OGP: SNSでリンクを貼ったときのプレビューカード。
+         og:image は絶対URL必須。本番URLへ引っ越す際は必ず書き換えること。 -->
+    <meta property="og:title" content="shachi-orca — portfolio" />
+    <meta property="og:description" content="スクロールで魅せる、近未来ポートフォリオ。3D×ネオンの没入体験。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="shachi-orca" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:image" content="https://shachi-orca.github.io/hp3d-preview/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script type="module" crossorigin src="./assets/index-DW6fi7Zl.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-C1JGNrGc.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- デバッグモード: URLに ?debug を付けるとスマホでも画面内コンソールが出る
+         （例: https://.../hp3d-preview/?debug ）。通常アクセスでは何も読み込まない。 -->
+    <script>
+      if (new URLSearchParams(location.search).has('debug')) {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/eruda';
+        s.onload = function () { window.eruda && window.eruda.init(); };
+        document.body.appendChild(s);
+      }
+    </script>
+  </body>
+</html>
